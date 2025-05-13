@@ -28,6 +28,9 @@ pub struct LogEntry {
 impl LogEntry {
 
     #[inline]
+    pub fn level_index(&self) -> u8 { self.level.level }
+
+    #[inline]
     pub fn level(&self) -> &'static str { self.level.name }
     #[inline]
     pub fn level_padding(&self) -> usize { self.level.name_padded.len() - self.level.name.len() }

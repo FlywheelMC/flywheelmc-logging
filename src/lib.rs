@@ -18,6 +18,8 @@ pub use level::{
     trace, trace_once
 };
 
+mod filter;
+
 mod log;
 pub use log::LogEntry;
 
