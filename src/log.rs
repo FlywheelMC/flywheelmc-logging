@@ -1,5 +1,6 @@
 use crate::colour::ENABLE_COLOUR;
 use crate::level::LevelInfo;
+use crate::filter::LEVEL_FILTER;
 use core::num::NonZeroUsize;
 use std::borrow::Cow;
 use std::str::Lines;
@@ -119,6 +120,7 @@ pub fn log_inner(
         timestamp : Utc::now(),
         thread    : thread::current()
     };
+    if (! LEVEL_FILTER.matched_by(&entry)) { return; }
     eprintln!(
         "{fmt0} {fmtr}{fmt2}[{fmtr}{fmt0} {fmtr}{fmt2}{}{fmtr}{fmt0} | {} | {module: <module_padding$} {EMPTY: >line_padding$}:{fmtr}{fmt0}{line}:{col: <col_padding$} {fmtr}{fmt2}]{fmtr}{fmt0} {fmtr} {fmt1}{}{fmtr}",
         level.name_padded,

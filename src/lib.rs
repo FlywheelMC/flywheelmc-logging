@@ -19,6 +19,7 @@ pub use level::{
 };
 
 mod filter;
+pub use filter::{ LevelFilter, LEVEL_FILTER };
 
 mod log;
 pub use log::LogEntry;
