@@ -5,7 +5,7 @@ use core::str::FromStr;
 use std::sync::RwLock;
 
 
-pub static LEVEL_FILTER : LevelFilterContainer = LevelFilterContainer(RwLock::new(LevelFilter::TRACE));
+pub static GLOBAL_FILTER : LevelFilterContainer = LevelFilterContainer(RwLock::new(LevelFilter::ALL));
 
 
 pub struct LevelFilterContainer(RwLock<LevelFilter>);
@@ -32,16 +32,10 @@ pub struct LevelFilter {
 impl LevelFilter {
 
     pub const LEVELS : [&'static str; 7] = [
-        "fatal", "error", "warn", "pass", "info", "debug", "trace"
+        "trace", "debug", "info", "pass", "warn", "error", "fatal"
     ];
 
-    pub const FATAL : Self = Self { fallback : 6, modules : Vec::new() };
-    pub const ERROR : Self = Self { fallback : 5, modules : Vec::new() };
-    pub const WARN  : Self = Self { fallback : 4, modules : Vec::new() };
-    pub const PASS  : Self = Self { fallback : 3, modules : Vec::new() };
-    pub const INFO  : Self = Self { fallback : 2, modules : Vec::new() };
-    pub const DEBUG : Self = Self { fallback : 1, modules : Vec::new() };
-    pub const TRACE : Self = Self { fallback : 0, modules : Vec::new() };
+    pub const ALL : Self = Self { fallback : 0, modules : Vec::new() };
 
 }
 
@@ -49,7 +43,7 @@ impl fmt::Display for LevelFilter {
     fn fmt(&self, f : &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", Self::LEVELS[self.fallback as usize])?;
         for (module, level,) in &self.modules {
-            write!(f, ",{}={}", module, Self::LEVELS[self.fallback as usize])?;
+            write!(f, ",{}={}", module, Self::LEVELS[*level as usize])?;
         }
         Ok(())
     }
@@ -60,12 +54,13 @@ impl FromStr for LevelFilter {
     fn from_str(s : &str) -> Result<Self, Self::Err> {
         let mut fallback = 0;
         let mut modules  = Vec::new();
+        let     s        = s.to_ascii_lowercase();
         for part in s.split(",") {
             if let Some((k, v,)) = part.split_once("=") {
                 let k = k.trim();
-                let v = v.trim().to_ascii_lowercase();
+                let v = v.trim();
                 let Some(level) = level_from_name(&v)
-                    else { return Err(BadLevelFilter::UnknownLevel(v)); };
+                    else { return Err(BadLevelFilter::UnknownLevel(v.to_string())); };
                 modules.push((k.to_string(), level));
             } else {
                 let part = part.trim();
@@ -101,7 +96,7 @@ pub enum BadLevelFilter {
 impl fmt::Display for BadLevelFilter {
     fn fmt(&self, f : &mut fmt::Formatter<'_>) -> fmt::Result {
         match (self) {
-            Self::UnknownLevel(name) => write!(f, "unknown level {:?}", name)
+            Self::UnknownLevel(name) => write!(f, "unknown log level {:?}", name)
         }
     }
 }

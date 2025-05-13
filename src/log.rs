@@ -1,6 +1,5 @@
-use crate::colour::ENABLE_COLOUR;
 use crate::level::LevelInfo;
-use crate::filter::LEVEL_FILTER;
+use crate::target::LOG_TARGETS;
 use core::num::NonZeroUsize;
 use std::borrow::Cow;
 use std::str::Lines;
@@ -9,8 +8,6 @@ use std::thread::{ self, Thread };
 use inventory;
 use chrono::{ DateTime, Utc, Local };
 
-
-const EMPTY : &'static str = "";
 
 pub const fn usize_digits(n : usize) -> NonZeroUsize {
     unsafe { NonZeroUsize::new_unchecked(if let Some(v) = n.checked_ilog10() { (v as usize) + 1 } else { 1 }) }
@@ -58,12 +55,17 @@ impl LogEntry {
     #[inline]
     pub fn module(&self) -> &'static str { self.module }
     #[inline]
-    pub fn module_padding(&self) -> usize { self.module.len() }
+    pub fn module_padding(&self) -> usize { *MODULE_MAX_LEN }
 
     #[inline]
     pub fn line(&self) -> u32 { self.line }
     #[inline]
+    pub fn line_padding(&self) -> usize { *LINE_MAX_LEN }
+
+    #[inline]
     pub fn col(&self) -> u32 { self.col }
+    #[inline]
+    pub fn col_padding(&self) -> usize { *COL_MAX_LEN }
 
     #[inline]
     pub fn thread(&self) -> &Thread { &self.thread }
@@ -111,7 +113,7 @@ pub fn log_inner(
     col     : u32,
     message : Cow<'static, str>
 ) -> () {
-    let entry = LogEntry {
+    LOG_TARGETS.handle(&LogEntry {
         level,
         module,
         line,
@@ -119,19 +121,5 @@ pub fn log_inner(
         message,
         timestamp : Utc::now(),
         thread    : thread::current()
-    };
-    if (! LEVEL_FILTER.matched_by(&entry)) { return; }
-    eprintln!(
-        "{fmt0} {fmtr}{fmt2}[{fmtr}{fmt0} {fmtr}{fmt2}{}{fmtr}{fmt0} | {} | {module: <module_padding$} {EMPTY: >line_padding$}:{fmtr}{fmt0}{line}:{col: <col_padding$} {fmtr}{fmt2}]{fmtr}{fmt0} {fmtr} {fmt1}{}{fmtr}",
-        level.name_padded,
-        entry.timestamp_local().format("%Y-%m-%d %H:%M:%S.%f"),
-        entry.message,
-        fmt0           = if (*ENABLE_COLOUR) { level.fmt0 } else { "" },
-        fmt1           = if (*ENABLE_COLOUR) { level.fmt1 } else { "" },
-        fmt2           = if (*ENABLE_COLOUR) { level.fmt2 } else { "" },
-        fmtr           = if (*ENABLE_COLOUR) { "\x1b[0m" } else { "" },
-        module_padding = *MODULE_MAX_LEN,
-        line_padding   = (*LINE_MAX_LEN - usize_digits(line as usize).get()),
-        col_padding    = *COL_MAX_LEN
-    );
+    });
 }

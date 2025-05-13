@@ -19,10 +19,13 @@ pub use level::{
 };
 
 mod filter;
-pub use filter::{ LevelFilter, LEVEL_FILTER };
+pub use filter::{ LevelFilter, GLOBAL_FILTER };
 
 mod log;
 pub use log::LogEntry;
+
+mod target;
+pub use target::{ LogTarget, SingleLogTarget, LOG_TARGETS };
 
 mod once;
 pub use once::once;
