@@ -1,3 +1,4 @@
+use crate::colour::ENABLE_COLOUR;
 use crate::level::LevelInfo;
 use core::num::NonZeroUsize;
 use std::borrow::Cow;
@@ -116,13 +117,14 @@ pub fn log_inner(
         thread    : thread::current()
     };
     eprintln!(
-        "{fmt0} \x1b[0m{fmt2}[\x1b[0m{fmt0} \x1b[0m{fmt2}{}\x1b[0m{fmt0} | {} | {module: <module_padding$} {EMPTY: >line_padding$}\x1b[2m:\x1b[0m{fmt0}{line}:{col: <col_padding$} \x1b[0m{fmt2}]\x1b[0m{fmt0} \x1b[0m {fmt1}{}\x1b[0m",
+        "{fmt0} {fmtr}{fmt2}[{fmtr}{fmt0} {fmtr}{fmt2}{}{fmtr}{fmt0} | {} | {module: <module_padding$} {EMPTY: >line_padding$}:{fmtr}{fmt0}{line}:{col: <col_padding$} {fmtr}{fmt2}]{fmtr}{fmt0} {fmtr} {fmt1}{}{fmtr}",
         level.name_padded,
         entry.timestamp_local().format("%Y-%m-%d %H:%M:%S.%f"),
         entry.message,
-        fmt0           = level.fmt0,
-        fmt1           = level.fmt1,
-        fmt2           = level.fmt2,
+        fmt0           = if (*ENABLE_COLOUR) { level.fmt0 } else { "" },
+        fmt1           = if (*ENABLE_COLOUR) { level.fmt1 } else { "" },
+        fmt2           = if (*ENABLE_COLOUR) { level.fmt2 } else { "" },
+        fmtr           = if (*ENABLE_COLOUR) { "\x1b[0m" } else { "" },
         module_padding = *MODULE_MAX_LEN,
         line_padding   = (*LINE_MAX_LEN - usize_digits(line as usize).get()),
         col_padding    = *COL_MAX_LEN

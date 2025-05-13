@@ -4,6 +4,9 @@
 )]
 
 
+mod colour;
+pub use colour::ENABLE_COLOUR;
+
 mod level;
 pub use level::{
     fatal, fatal_once,
