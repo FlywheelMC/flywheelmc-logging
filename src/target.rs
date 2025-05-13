@@ -31,7 +31,6 @@ impl LogTargetsContainer {
     }
 
     pub fn handle(&self, entry : &LogEntry) -> () {
-    if (! GLOBAL_FILTER.matched_by(&entry)) { return; }
         for target in &mut*self.0.write().unwrap() {
             let _ = target.handle(entry);
         }

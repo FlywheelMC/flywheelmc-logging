@@ -13,7 +13,7 @@ pub struct LevelFilterContainer(RwLock<LevelFilter>);
 impl LevelFilterContainer {
 
     pub fn matched_by(&self, entry : &LogEntry) -> bool {
-        self.0.read().unwrap().matched_by(entry)
+        self.0.read().unwrap().matched_by_selfonly(entry)
     }
 
     pub fn set(&self, level : LevelFilter) -> () {
@@ -74,7 +74,18 @@ impl FromStr for LevelFilter {
 }
 
 impl LevelFilter {
+
+    /// Also checks global.
     pub fn matched_by(&self, entry : &LogEntry) -> bool {
+        entry.level_index() >= self.match_min_level(entry).or_else(|| GLOBAL_FILTER.0.read().unwrap().match_min_level(entry)).unwrap_or(self.fallback)
+    }
+
+    /// Does not check global.
+    pub fn matched_by_selfonly(&self, entry : &LogEntry) -> bool {
+        entry.level_index() >= self.match_min_level(entry).unwrap_or(self.fallback)
+    }
+
+    fn match_min_level(&self, entry : &LogEntry) -> Option<u8> {
         let mut min_level = None;
         for (k, v,) in &self.modules {
             if let Some(right) = entry.module().strip_prefix(k) {
@@ -83,8 +94,9 @@ impl LevelFilter {
                 }
             }
         }
-        entry.level_index() >= min_level.unwrap_or(self.fallback)
+        min_level
     }
+
 }
 
 
