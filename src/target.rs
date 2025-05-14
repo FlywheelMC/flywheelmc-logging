@@ -1,6 +1,6 @@
 use crate::colour::ENABLE_COLOUR;
 use crate::log::{ LogEntry, usize_digits };
-use crate::filter::{ LevelFilter, BadLevelFilter, GLOBAL_FILTER };
+use crate::filter::{ LevelFilter, BadLevelFilter };
 use core::error::Error;
 use core::fmt;
 use core::str::FromStr;
