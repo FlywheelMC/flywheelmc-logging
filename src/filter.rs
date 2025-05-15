@@ -16,7 +16,7 @@ impl LevelFilterContainer {
         self.0.read().unwrap().matched_by_selfonly(entry)
     }
 
-    pub fn set(&self, level : LevelFilter) -> () {
+    pub fn set(&self, level : LevelFilter) {
         *self.0.write().unwrap() = level;
     }
 
@@ -59,7 +59,7 @@ impl FromStr for LevelFilter {
             if let Some((k, v,)) = part.split_once("=") {
                 let k = k.trim();
                 let v = v.trim();
-                let Some(level) = level_from_name(&v)
+                let Some(level) = level_from_name(v)
                     else { return Err(BadLevelFilter::UnknownLevel(v.to_string())); };
                 modules.push((k.to_string(), level));
             } else {
@@ -108,14 +108,19 @@ pub enum BadLevelFilter {
 impl fmt::Display for BadLevelFilter {
     fn fmt(&self, f : &mut fmt::Formatter<'_>) -> fmt::Result {
         match (self) {
-            Self::UnknownLevel(name) => write!(f, "unknown log level {:?}", name)
+            Self::UnknownLevel(name) => write!(f, "unknown log level {name:?}")
         }
     }
 }
 
-impl Into<Box<dyn Error + Send + Sync>> for BadLevelFilter {
+/*impl Into<Box<dyn Error + Send + Sync>> for BadLevelFilter {
     fn into(self) -> Box<dyn Error + Send + Sync> {
         self.to_string().into()
+    }
+}*/
+impl From<BadLevelFilter> for Box<dyn Error + Send + Sync> {
+    fn from(value : BadLevelFilter) -> Self {
+        value.to_string().into()
     }
 }
 

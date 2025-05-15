@@ -4,7 +4,7 @@ use std::sync::LazyLock;
 use supports_color::{ self, Stream };
 
 
-pub static ENABLE_COLOUR : EnableColour = EnableColour(LazyLock::new(|| from_args_or_env()));
+pub static ENABLE_COLOUR : EnableColour = EnableColour(LazyLock::new(from_args_or_env));
 
 pub struct EnableColour(LazyLock<bool>);
 
@@ -55,7 +55,7 @@ fn from_env_only() -> bool {
     } else if (env_maybe_bool("CLICOLOR") == Some(true)) {
         true
     } else {
-        supports_color::on(Stream::Stderr).map_or(false, |l| l.has_basic)
+        supports_color::on(Stream::Stderr).is_some_and(|l| l.has_basic)
     }
 }
 
@@ -65,5 +65,5 @@ fn env_bool(name : &str) -> bool {
 }
 
 fn env_maybe_bool(name : &str) -> Option<bool> {
-    env::var(name).ok().map(|v| v != "0" && v.to_ascii_lowercase() != "false")
+    env::var(name).ok().map(|v| v != "0" && (! v.eq_ignore_ascii_case("false")))
 }

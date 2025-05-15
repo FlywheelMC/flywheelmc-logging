@@ -10,7 +10,7 @@ use std::path::Path;
 use std::sync::RwLock;
 
 
-const EMPTY : &'static str = "";
+const EMPTY : &str = "";
 
 
 pub static LOG_TARGETS : LogTargetsContainer = LogTargetsContainer(RwLock::new(Vec::new()));
@@ -20,17 +20,17 @@ pub struct LogTargetsContainer(RwLock<Vec<Box<dyn LogTarget>>>);
 
 impl LogTargetsContainer {
 
-    pub fn push<T : LogTarget>(&self, target : T) -> () {
+    pub fn push<T : LogTarget>(&self, target : T) {
         self.0.write().unwrap().push(Box::new(target));
     }
-    pub fn append(&self, from : &mut Vec<Box<dyn LogTarget>>) -> () {
+    pub fn append(&self, from : &mut Vec<Box<dyn LogTarget>>) {
         self.0.write().unwrap().append(from);
     }
-    pub fn extend<I : IntoIterator<Item = Box<dyn LogTarget>>>(&self, iter : I) -> () {
+    pub fn extend<I : IntoIterator<Item = Box<dyn LogTarget>>>(&self, iter : I) {
         self.0.write().unwrap().extend(iter);
     }
 
-    pub fn handle(&self, entry : &LogEntry) -> () {
+    pub fn handle(&self, entry : &LogEntry) {
         for target in &mut*self.0.write().unwrap() {
             let _ = target.handle(entry);
         }
@@ -90,22 +90,32 @@ pub enum BadLogTarget {
 impl fmt::Display for BadLogTarget {
     fn fmt(&self, f : &mut fmt::Formatter<'_>) -> fmt::Result {
         match (self) {
-            Self::UnknownTarget(name) => write!(f, "unknown log target {:?}", name),
-            Self::BadLevelFilter(err) => write!(f, "{}", err),
-            Self::Io(err)             => write!(f, "{}", err)
+            Self::UnknownTarget(name) => write!(f, "unknown log target {name:?}"),
+            Self::BadLevelFilter(err) => write!(f, "{err}"),
+            Self::Io(err)             => write!(f, "{err}")
         }
     }
 }
 
-impl Into<Box<dyn Error + Send + Sync>> for BadLogTarget {
-    fn into(self) -> Box<dyn Error + Send + Sync> {
-        match (self) {
-            Self::UnknownTarget(name) => name.into(),
-            Self::BadLevelFilter(err) => err.into(),
-            Self::Io(error)           => Box::new(error),
+// impl Into<Box<dyn Error + Send + Sync>> for BadLogTarget {
+//     fn into(self) -> Box<dyn Error + Send + Sync> {
+//         match (self) {
+//             Self::UnknownTarget(name) => name.into(),
+//             Self::BadLevelFilter(err) => err.into(),
+//             Self::Io(error)           => Box::new(error),
+//         }
+//     }
+// }
+impl From<BadLogTarget> for Box<dyn Error + Send + Sync> {
+    fn from(value : BadLogTarget) -> Self {
+        match (value) {
+            BadLogTarget::UnknownTarget(name) => name.into(),
+            BadLogTarget::BadLevelFilter(err) => err.into(),
+            BadLogTarget::Io(error)           => Box::new(error),
         }
     }
 }
+
 
 
 pub struct StderrLogTarget {
