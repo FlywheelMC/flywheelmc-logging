@@ -14,7 +14,7 @@ keywords   = [ "flywheel", "mc", "minecraft", "game" ]
 categories = [ "development-tools::debugging" ]
 
 edition      = "2024"
-rust-version = "1.87"
+rust-version = "1.89"
 
 
 [dependencies.inventory]
