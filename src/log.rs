@@ -5,7 +5,7 @@ use std::borrow::Cow;
 use std::str::Lines;
 use std::sync::LazyLock;
 use std::thread::{ self, Thread };
-#[allow(clippy::single_component_path_imports)]
+#[expect(clippy::single_component_path_imports)]
 use inventory;
 use chrono::{ DateTime, Utc, Local };
 
