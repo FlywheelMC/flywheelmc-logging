@@ -58,6 +58,11 @@ impl fmt::Debug for SingleLogTarget {
     }
 }
 
+#[cfg(not(target_os = "windows"))]
+const PATH_PREFIX : &str = "./";
+#[cfg(target_os = "windows")]
+const PATH_PREFIX : &str = ".\\";
+
 impl FromStr for SingleLogTarget {
     type Err = BadLogTarget;
     fn from_str(s : &str) -> Result<Self, Self::Err> {
@@ -72,7 +77,7 @@ impl FromStr for SingleLogTarget {
         };
         Ok(SingleLogTarget(if (k == "stderr") {
             Box::new(StderrLogTarget::default(v))
-        } else if (k.starts_with("./") || k.starts_with("/")) {
+        } else if (k.starts_with(PATH_PREFIX) || k.starts_with("/")) {
             Box::new(FileLogTarget::open(v, k).map_err(BadLogTarget::Io)?)
         } else {
             return Err(BadLogTarget::UnknownTarget(k.to_string()));
