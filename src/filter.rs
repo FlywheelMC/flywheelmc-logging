@@ -25,7 +25,7 @@ impl LevelFilterContainer {
 
 #[derive(Debug, Clone)]
 pub struct LevelFilter {
-    fallback : u8,
+    fallback : Option<u8>,
     modules  : Vec<(String, u8,)>
 }
 
@@ -35,15 +35,21 @@ impl LevelFilter {
         "trace", "debug", "info", "pass", "warn", "error", "fatal"
     ];
 
-    pub const ALL : Self = Self { fallback : 0, modules : Vec::new() };
+    pub const ALL : Self = Self { fallback : None, modules : Vec::new() };
 
 }
 
 impl fmt::Display for LevelFilter {
     fn fmt(&self, f : &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", Self::LEVELS[self.fallback as usize])?;
+        let mut first = true;
+        if let Some(fallback) = self.fallback {
+            write!(f, "{}", Self::LEVELS[fallback as usize])?;
+            first = false;
+        }
         for (module, level,) in &self.modules {
-            write!(f, ",{}={}", module, Self::LEVELS[*level as usize])?;
+            if (first) { write!(f, ",")?; }
+            write!(f, "{}={}", module, Self::LEVELS[*level as usize])?;
+            first = false;
         }
         Ok(())
     }
@@ -52,7 +58,7 @@ impl fmt::Display for LevelFilter {
 impl FromStr for LevelFilter {
     type Err = BadLevelFilter;
     fn from_str(s : &str) -> Result<Self, Self::Err> {
-        let mut fallback = 0;
+        let mut fallback = None;
         let mut modules  = Vec::new();
         let     s        = s.to_ascii_lowercase();
         for part in s.split(",") {
@@ -66,7 +72,7 @@ impl FromStr for LevelFilter {
                 let part = part.trim();
                 let Some(level) = level_from_name(part)
                     else { return Err(BadLevelFilter::UnknownLevel(part.to_string())); };
-                fallback = fallback.max(level);
+                fallback = Some(fallback.unwrap_or(0).max(level));
             }
         }
         Ok(Self { fallback, modules })
@@ -77,12 +83,22 @@ impl LevelFilter {
 
     /// Also checks global.
     pub fn matched_by(&self, entry : &LogEntry) -> bool {
-        entry.level_index() >= self.match_min_level(entry).or_else(|| GLOBAL_FILTER.0.read().unwrap().match_min_level(entry)).unwrap_or(self.fallback)
+        self.match_min_level(entry)
+            .or(self.fallback)
+            .map_or_else(
+                || GLOBAL_FILTER.0.read().unwrap().matched_by_selfonly(entry),
+                |min_level| entry.level_index() >= min_level
+            )
     }
 
     /// Does not check global.
     pub fn matched_by_selfonly(&self, entry : &LogEntry) -> bool {
-        entry.level_index() >= self.match_min_level(entry).unwrap_or(self.fallback)
+        self.match_min_level(entry)
+            .or(self.fallback)
+            .map_or(
+                true,
+                |min_level| entry.level_index() >= min_level
+            )
     }
 
     fn match_min_level(&self, entry : &LogEntry) -> Option<u8> {
